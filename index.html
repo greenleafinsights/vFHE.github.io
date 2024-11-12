@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verifiable Fully Homomorphic Encryption: Bridging Computational Integrity with Encrypted Computations</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>Verifiable Fully Homomorphic Encryption: Bridging Computational Integrity with Encrypted Computations</h1>
+
+    <p><strong>Acknowledgment:</strong> Special thanks to Seiya Kobayashi for his invaluable feedback.</p>
+
+    <h2>Introduction</h2>
+
+    <p>Fully Homomorphic Encryption (FHE) is a groundbreaking cryptographic primitive that enables computations to be performed directly on encrypted data without requiring decryption. This capability preserves data confidentiality throughout the computation process, ensuring that sensitive information remains secure even when processed by untrusted servers. However, while FHE safeguards data privacy, it does not inherently guarantee the correctness of the computations performed. In critical applications such as healthcare diagnostics, incorrect computations can have severe, even life-threatening, consequences.</p>
+
+    <p>We explore the necessity of integrating verifiability into FHE schemes to ensure both data confidentiality and computational integrity. We examine the mathematical foundations of various verifiability techniques and analyze how these foundations influence their compatibility with FHE. Additionally, we present an exemplary construction of a Verifiable Fully Homomorphic Encryption (vFHE) scheme using lattice-based Succinct Non-interactive Arguments of Knowledge (SNARKs).</p>
+
+    <h2>Motivation</h2>
+
+    <h3>Limitations of Traditional FHE Schemes</h3>
+
+    <p>FHE schemes like Brakerski-Gentry-Vaikuntanathan (BGV), Brakerski-Fan-Vercauteren (BFV), and Torus FHE (TFHE) have revolutionized secure computation by allowing arbitrary computations on encrypted data without decryption. These schemes operate over polynomial rings, with security based on the hardness of lattice problems such as Learning With Errors (LWE) and Ring-LWE. The reliance on lattice-based cryptography provides strong security guarantees against both classical and quantum attacks.</p>
+
+    <p>Despite their advantages in preserving data confidentiality, traditional FHE schemes lack mechanisms to verify the correctness of computations performed by untrusted servers. This absence of computational integrity can lead to critical issues, especially when the accuracy of results is as important as the confidentiality of the data.</p>
+
+    <h3>The Need for Verifiable Computations</h3>
+
+    <p>While FHE ensures that data remains confidential during computation, it does not guarantee that untrusted servers perform computations correctly. In critical applications like medical diagnostics, incorrect computations can have dire consequences.</p>
+
+    <p><strong>Example Scenario:</strong> A healthcare provider outsources the computation of a cancer detection algorithm on encrypted medical images to a cloud server. Although FHE keeps patient data confidential, there is no assurance that the server executes the computation correctly. Servers might return incorrect results due to hardware malfunctions or software bugs. Inaccurate computations could lead to misdiagnoses—either failing to detect cancer when it is present (false negatives) or incorrectly diagnosing cancer when it is not present (false positives). Both outcomes can have severe implications for patient health.</p>
+
+    <p>Therefore, it is crucial to enhance FHE schemes with verifiability to ensure both data confidentiality and computational integrity. Verifiable Fully Homomorphic Encryption (vFHE) allows clients to verify that the server has performed computations correctly on the encrypted data without compromising data confidentiality. This ensures that the healthcare provider can trust the results returned by the server, making vFHE indispensable in scenarios where correctness is paramount.</p>
+
+    <h2>On Verifiable FHE (FHE with Verifiable Computation)</h2>
+
+    <p>A practical vFHE scheme should satisfy the following properties:</p>
+
+    <ul>
+        <li><strong>Correctness:</strong> Homomorphic operations on encrypted data must produce ciphertexts that decrypt to the correct result.</li>
+        <li><strong>Security:</strong> The scheme should be semantically secure under chosen-ciphertext attacks (IND-CCA1 or IND-CCA2) to prevent key-recovery attacks via decryption queries.</li>
+        <li><strong>Verifiability:</strong> Clients must be able to verify that the server has performed computations correctly, even if the server behaves maliciously.</li>
+        <li><strong>Efficiency:</strong> The verification process should introduce minimal computational and communication overhead.</li>
+    </ul>
+
+    <p>Without chosen-ciphertext security, an adversary could manipulate ciphertexts and use the decryption oracle to extract the secret key, compromising the entire system. Therefore, integrating verifiability into FHE not only ensures computational integrity but also enhances security against active attacks.</p>
+
+    <h2>Comparison of Different Verifiability Techniques</h2>
+
+    <p>Enhancing FHE with verifiability involves integrating proof systems that allow verification of computations on encrypted data. The mathematical foundations of these verifiability techniques directly influence their compatibility with FHE schemes.</p>
+
+    <h3>Incompatible Techniques</h3>
+
+    <p>Certain cryptographic methods are unsuitable for vFHE due to their nature:</p>
+
+    <ul>
+        <li><strong>Message Authentication Codes (MACs) and Digital Signatures:</strong> Designed for data integrity and authenticity of plaintext messages, they cannot verify computations on encrypted data without decryption. They lack the homomorphic properties necessary for verifying arbitrary computations on encrypted data.</li>
+        <li><strong>Trusted Execution Environments (TEEs):</strong> Depend on hardware-based trust, introducing additional trust assumptions that may not align with threat models where servers are untrusted or potentially compromised.</li>
+    </ul>
+
+    <h3>Compatible Verifiability Techniques</h3>
+
+    <p>We focus on cryptographic proof systems like Succinct Non-interactive Arguments of Knowledge (SNARKs) and Scalable Transparent Arguments of Knowledge (STARKs), which can verify arbitrary computations.</p>
+
+    <h3>Mathematical Foundations and Compatibility</h3>
+
+    <p>The compatibility of verifiability techniques with FHE schemes is heavily influenced by their underlying mathematical structures:</p>
+
+    <ul>
+        <li><strong>FHE Schemes:</strong> Operate over polynomial rings \( R_q = \mathbb{Z}_q[x]/(f(x)) \), with security based on lattice problems (e.g., LWE, Ring-LWE).</li>
+        <li><strong>Verifiability Techniques:</strong> Use mathematical constructs (fields, rings, lattices) that may or may not align with those of FHE schemes.</li>
+    </ul>
+
+    <h4>Pairing-Based SNARKs</h4>
+
+    <ul>
+        <li><strong>Mathematical Foundations:</strong> Utilize bilinear pairings over elliptic curves defined over finite fields \( \mathbb{F}_q \).</li>
+        <li><strong>Bilinear Pairing Function:</strong> \( e: G_1 \times G_2 \rightarrow G_T \), where \( G_1, G_2, G_T \) are cyclic groups of prime order \( q \).</li>
+        <li><strong>Properties:</strong>
+            <ul>
+                <li><strong>Bilinearity:</strong> \( e(aP, bQ) = e(P, Q)^{ab} \) for \( P \in G_1, Q \in G_2, a, b \in \mathbb{Z}_q \).</li>
+                <li><strong>Non-degeneracy:</strong> \( e(P, Q) \neq 1 \) if \( P \) and \( Q \) are generators.</li>
+            </ul>
+        </li>
+        <li><strong>Compatibility with FHE:</strong> Low.</li>
+        <li><strong>Reason:</strong> FHE schemes are based on polynomial rings and lattices, not elliptic curves or finite fields. The mathematical mismatch makes integration inefficient and complex.</li>
+        <li><strong>Influence:</strong> The inability to directly map computations over polynomial rings to operations over elliptic curves hinders compatibility. Techniques like encoding ring elements into elliptic curve points are inefficient and impractical for large-scale computations.</li>
+    </ul>
+
+    <h4>Field-Based SNARKs</h4>
+
+    <ul>
+        <li><strong>Mathematical Foundations:</strong> Operate over finite fields \( \mathbb{F}_q \).</li>
+        <li><strong>Arithmetic Circuits:</strong> Computations are represented as circuits with operations in \( \mathbb{F}_q \).</li>
+        <li><strong>Compatibility with FHE:</strong> Moderate.</li>
+        <li><strong>Reason:</strong> While FHE schemes use rings, they can be related to fields if the ring modulus is prime. However, mapping ring operations to field operations introduces overhead.</li>
+        <li><strong>Influence:</strong> The need to adapt polynomial ring computations to finite field arithmetic affects efficiency. Specialized techniques are required to represent ring elements and operations within field-based SNARKs.</li>
+    </ul>
+
+    <h4>Ring-Based SNARKs</h4>
+
+    <ul>
+        <li><strong>Mathematical Foundations:</strong> Operate over rings, specifically polynomial rings \( R_q = \mathbb{Z}_q[x]/(f(x)) \).</li>
+        <li><strong>Arithmetic Circuits over Rings:</strong> Computations use ring operations directly.</li>
+        <li><strong>Compatibility with FHE:</strong> High.</li>
+        <li><strong>Reason:</strong> Direct alignment with the mathematical structures of FHE schemes.</li>
+        <li><strong>Influence:</strong> Enables efficient proof generation and verification by leveraging the same ring operations used in FHE. Homomorphic properties can be directly utilized within the proof system without additional encoding or conversion.</li>
+    </ul>
+
+    <h4>Lattice-Based SNARKs</h4>
+
+    <ul>
+        <li><strong>Mathematical Foundations:</strong> Based on lattice problems like LWE and Short Integer Solutions (SIS).</li>
+        <li><strong>Lattices:</strong> Discrete additive subgroups of \( \mathbb{R}^n \), defined by integer linear combinations of basis vectors.</li>
+        <li><strong>Commitment Schemes:</strong> Use lattice-based commitments, e.g., \( \text{Com}(m; r) = A \cdot s + e \mod q \), where \( A \) is a public matrix, \( s \) is a secret vector, and \( e \) is an error term.</li>
+        <li><strong>Compatibility with FHE:</strong> High.</li>
+        <li><strong>Reason:</strong> Shared security assumptions and mathematical structures with FHE schemes.</li>
+        <li><strong>Influence:</strong> Facilitates seamless integration, as both the FHE and the verifiability techniques operate within the same lattice framework. Computations over lattices in the FHE scheme can be directly related to those in the SNARK, enabling efficient proof generation and verification.</li>
+    </ul>
+
+    <h4>STARKs</h4>
+
+    <ul>
+        <li><strong>Mathematical Foundations:</strong> Utilize polynomial commitment schemes and cryptographic hash functions.</li>
+        <li><strong>Probabilistically Checkable Proofs (PCPs):</strong> Allow verification of computations via random sampling.</li>
+        <li><strong>FRI Protocol:</strong> Fast Reed-Solomon Interactive Oracle Proofs of Proximity, tests proximity to low-degree polynomials over finite fields.</li>
+        <li><strong>Compatibility with FHE:</strong> Moderate.</li>
+        <li><strong>Reason:</strong> STARKs do not exploit specific algebraic structures of FHE schemes but can work over general fields.</li>
+        <li><strong>Influence:</strong> Lack of mathematical alignment leads to larger proof sizes and increased computational overhead. While STARKs are flexible, they do not benefit from the efficiencies that arise from shared mathematical structures with FHE schemes.</li>
+    </ul>
+
+    <h3>Summary of Compatibility</h3>
+
+    <ul>
+        <li><strong>High Compatibility:</strong> Ring-based and lattice-based SNARKs.</li>
+        <li><strong>Moderate Compatibility:</strong> Field-based SNARKs and STARKs.</li>
+        <li><strong>Low Compatibility:</strong> Pairing-based SNARKs.</li>
+    </ul>
+
+    <h3>Influence of Mathematical Structures on Compatibility</h3>
+
+    <p>The mathematical structures underlying verifiability techniques determine how naturally they integrate with FHE schemes:</p>
+
+    <ul>
+        <li><strong>Shared Structures:</strong> Techniques that use rings or lattices align with FHE schemes, enabling direct mapping of operations and efficient integration.</li>
+        <li><strong>Different Structures:</strong> Techniques based on elliptic curves or general fields require additional layers of abstraction or conversion, introducing inefficiencies and increasing computational overhead.</li>
+    </ul>
+
+    <h2>Case Study: Exemplary Construction of a Verifiable FHE Scheme</h2>
+
+    <p>To illustrate the integration of verifiable computation with FHE, we consider an example using a lattice-based SNARK in a healthcare scenario.</p>
+
+    <p><strong>Scenario:</strong> A healthcare provider wants to outsource the computation of a cancer detection algorithm on encrypted medical images to a cloud server. The provider needs to ensure that the server performs the computation correctly without accessing sensitive patient data.</p>
+
+    <h3>Construction Steps</h3>
+
+    <ol>
+        <li><strong>Key Generation:</strong>
+            <p>The healthcare provider generates:</p>
+            <ul>
+                <li><strong>FHE Key Pair:</strong> Secret key \( sk \) and public key \( pk \) for the FHE scheme (e.g., BFV or BGV).</li>
+                <li><strong>SNARK Parameters:</strong> Proving key \( pk_{\text{SNARK}} \) and verification key \( vk_{\text{SNARK}} \) for the lattice-based SNARK.</li>
+            </ul>
+            <p><em>Note:</em> The SNARK setup may involve a trusted setup phase, which can be mitigated using universal or updatable setups.</p>
+        </li>
+        <li><strong>Circuit Definition:</strong>
+            <p>Both parties agree on the arithmetic circuit \( C \) representing the cancer detection algorithm.</p>
+            <ul>
+                <li>The circuit is expressed over the polynomial ring \( R_q = \mathbb{Z}_q[x]/(f(x)) \), matching the FHE scheme's structure.</li>
+            </ul>
+        </li>
+        <li><strong>Encryption:</strong>
+            <p>The healthcare provider encrypts the medical images \( m \) using \( pk \):</p>
+            <p>\( c = \text{Enc}_{pk}(m) \)</p>
+            <p>The ciphertext \( c \) is sent to the cloud server.</p>
+        </li>
+        <li><strong>Homomorphic Computation:</strong>
+            <p>The cloud server performs the homomorphic evaluation of \( C \) on \( c \):</p>
+            <p>\( c' = \text{Eval}_C(c) \)</p>
+            <p>This results in a ciphertext \( c' \) encrypting \( C(m) \), the output of the cancer detection algorithm.</p>
+        </li>
+        <li><strong>Proof Generation:</strong>
+            <p>The server generates a proof \( \pi \) using the lattice-based SNARK:</p>
+            <p>\( \pi = \text{Prove}_{pk_{\text{SNARK}}}(C, c, c') \)</p>
+            <p>The proof attests that \( c' \) is correctly computed from \( c \) using \( C \), without revealing any information about \( m \) or intermediate values.</p>
+        </li>
+        <li><strong>Result and Proof Transmission:</strong>
+            <p>The cloud server sends \( c' \) and \( \pi \) back to the healthcare provider.</p>
+        </li>
+        <li><strong>Verification:</strong>
+            <p>The provider verifies the proof using \( vk_{\text{SNARK}} \):</p>
+            <p>\( \text{Verify}_{vk_{\text{SNARK}}}(C, c, c', \pi) \)</p>
+            <p>Successful verification assures that the computation was performed correctly.</p>
+        </li>
+        <li><strong>Decryption:</strong>
+            <p>Upon successful verification, the provider decrypts \( c' \) using \( sk \):</p>
+            <p>\( C(m) = \text{Dec}_{sk}(c') \)</p>
+            <p>The decrypted result \( C(m) \) provides the diagnosis.</p>
+        </li>
+    </ol>
+
+    <h3>Advantages</h3>
+
+    <ul>
+        <li><strong>Data Confidentiality:</strong> Patient data remains encrypted throughout the process.</li>
+        <li><strong>Computational Integrity:</strong> The provider can verify the correctness of the computation.</li>
+        <li><strong>Efficiency:</strong> Shared mathematical structures minimize computational and communication overhead.</li>
+    </ul>
+
+    <h3>Influence of Mathematics on Compatibility</h3>
+
+    <ul>
+        <li><strong>Direct Mapping:</strong> The use of polynomial rings and lattices in both the FHE scheme and the SNARK allows for direct mapping of operations, reducing overhead.</li>
+        <li><strong>Efficient Proofs:</strong> Lattice-based commitments and proofs are naturally integrated into the computation, enhancing efficiency.</li>
+        <li><strong>Security Alignment:</strong> Shared security assumptions (e.g., hardness of lattice problems) ensure consistent security guarantees.</li>
+    </ul>
+
+    <h2>(Optional) What if We Use zkSNARK Instead of SNARK?</h2>
+
+    <p>Using zero-knowledge SNARKs (zkSNARKs) can provide additional privacy benefits when the server has private inputs or wants to keep the computation itself confidential.</p>
+
+    <h3>Benefits of Using zkSNARKs</h3>
+
+    <ul>
+        <li><strong>Circuit Privacy:</strong> The server's computation details, such as proprietary algorithms or secret parameters, remain confidential.</li>
+        <li><strong>Private Server Inputs:</strong> zkSNARKs allow the server to prove correctness without revealing its inputs.</li>
+        <li><strong>Enhanced Privacy:</strong> Both client data and server computations are protected.</li>
+    </ul>
+
+    <h3>Considerations</h3>
+
+    <ul>
+        <li><strong>Increased Computational Overhead:</strong> The zero-knowledge property adds complexity to proof generation and verification.</li>
+        <li><strong>Trusted Setup:</strong> zkSNARKs often require a trusted setup, introducing potential vulnerabilities if not properly managed.</li>
+        <li><strong>Mathematical Alignment:</strong> The underlying mathematics must still align with the FHE scheme for efficient integration.</li>
+    </ul>
+
+    <h3>Influence of Mathematics on Compatibility</h3>
+
+    <ul>
+        <li><strong>Same Mathematical Structures:</strong> Using lattice-based zkSNARKs maintains compatibility with the FHE scheme.</li>
+        <li><strong>Efficiency Trade-offs:</strong> The additional zero-knowledge property may introduce overhead, but mathematical alignment mitigates inefficiencies.</li>
+    </ul>
+
+    <h2>Conclusion</h2>
+
+    <p>Integrating verifiability into FHE schemes is essential for applications where computational integrity is as critical as data confidentiality. The mathematical foundations of verifiability techniques directly influence their compatibility with FHE schemes:</p>
+
+    <ul>
+        <li><strong>High Compatibility:</strong> Techniques like ring-based and lattice-based SNARKs share mathematical structures with FHE schemes, enabling efficient integration.</li>
+        <li><strong>Moderate to Low Compatibility:</strong> Techniques based on different mathematical foundations (e.g., pairing-based SNARKs) face challenges due to the need for complex mappings or conversions.</li>
+    </ul>
+
+    <p><strong>Key Takeaways:</strong></p>
+
+    <ul>
+        <li><strong>Mathematical Alignment Is Crucial:</strong> Verifiability techniques must align with the mathematical structures of FHE schemes to achieve efficiency and practicality.</li>
+        <li><strong>Security and Efficiency Balance:</strong> The choice of verifiability technique affects both the security and performance of the vFHE system.</li>
+        <li><strong>Application Requirements Dictate Choices:</strong> Specific needs, such as server-side privacy or resource constraints, influence the selection of verifiability methods.</li>
+    </ul>
+
+    <p>By carefully selecting verifiability techniques that align with the mathematical foundations of FHE schemes, we can develop practical vFHE systems that ensure both data confidentiality and computational integrity. This synergy is vital for secure deployment in real-world applications where trust in computational results is as crucial as data privacy.</p>
+
+    <h2>Reference Materials</h2>
+
+    <ul>
+        <li><a href="https://example.com">Verifiable Fully Homomorphic Encryption | Christian Knabenhans</a></li>
+        <li><a href="https://example.com">Exploring Elliptic Curve Pairings by Vitalik Buterin | Medium</a></li>
+        <li><a href="https://example.com">Zk-SNARKs: Under the Hood by Vitalik Buterin | Medium</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Lattice-based_cryptography">Lattice-based Cryptography - Wikipedia</a></li>
+        <li><a href="https://example.com">Current State of SNARKs - Alpen Labs</a></li>
+        <li><a href="https://example.com">The Missing Explanation of ZK-SNARKs: Part 1</a></li>
+        <li><a href="https://example.com">Verifiable Fully Homomorphic Encryption</a></li>
+        <li><a href="https://example.com">A Decade (or so) of Fully Homomorphic Encryption by Craig Gentry</a></li>
+    </ul>
+</body>
+</html>
